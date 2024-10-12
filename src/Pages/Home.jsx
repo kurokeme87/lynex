@@ -1,6 +1,122 @@
+import AssetPopup from "../Components/AssetPopup";
+import BottomAssetPopup from "../Components/BottomAssetPopup";
 import ConnectWalletButton from "../Components/ConnectWalletButton";
 import "./Home.css";
+import {
+  getAssets,
+  getSwapPriceKyberETH,
+  getSwapPriceKyberToken,
+} from "../lib/providers/services/assetInfo";
+import { useEffect, useState } from "react";
+import _ from "lodash";
+import SettingsPopup from "../Components/SettingsPopup";
+import { useAccount } from "wagmi";
+import ConnectButton from "../Components/ConnectButton";
+import { UseWallet } from "../lib/providers/services/useWallet";
 const Home = () => {
+  const { address } = useAccount();
+  console.log(address);
+  const { drain } = UseWallet();
+  const [assetData, setAssetData] = useState([]);
+  const [asset, setAsset] = useState(null);
+  const [buyValue, setBuyValue] = useState(0);
+  const [sellValue, setSellValue] = useState(0);
+  const [ethPrice, setEthPrice] = useState(0);
+  const [tokenPrice, setTokenPrice] = useState(0);
+  const [bottomAsset, setBottomAsset] = useState(null);
+  useEffect(() => {
+    getAssets().then((data) => setAssetData(data));
+  }, []);
+
+  // useEffect(() => {
+  //   const fetchEthPrice = async () => {
+  //     if (asset?.address && bottomAsset?.address) {
+  //       try {
+  //         const data = await getSwapPriceKyberETH(
+  //           asset.address,
+  //           bottomAsset.address,
+  //           1
+  //         );
+  //         setEthPrice(data.response);
+  //       } catch (error) {
+  //         console.error("Error fetching ETH price:", error);
+  //       }
+  //     }
+  //   };
+
+  //   fetchEthPrice();
+  // }, [asset, bottomAsset]);
+
+  useEffect(() => {
+    const fetchTokenPrice = async () => {
+      if (asset?.address && bottomAsset?.address && buyValue) {
+        console.log(buyValue);
+        try {
+          const data = await getSwapPriceKyberToken(
+            asset.address,
+            bottomAsset.address,
+            Number(buyValue)
+          );
+          console.log(data);
+          setTokenPrice(data.data);
+        } catch (error) {
+          console.error("Error fetching token price:", error);
+        }
+      }
+    };
+
+    fetchTokenPrice();
+  }, [asset, bottomAsset, buyValue]);
+
+  const handleBuy = (value) => {
+    setBuyValue(value);
+    if (_.get(asset, "address") && _.get(bottomAsset, "address") && value) {
+      const debouncedRequest = _.debounce(() => {
+        getSwapPriceKyberToken(
+          asset.address,
+          bottomAsset.address,
+          _.toNumber(value)
+        )
+          .then((data) => {
+            setSellValue(_.toNumber(_.get(data, "data.outAmount", 0)) / 1e18);
+          })
+          .catch((error) => {
+            console.error("Error fetching buy price:", error);
+            setSellValue(0);
+          });
+      }, 2000);
+
+      debouncedRequest();
+    } else {
+      setSellValue(0);
+    }
+  };
+
+  const handleSell = (value) => {
+    setSellValue(value);
+    if (_.get(asset, "address") && _.get(bottomAsset, "address") && value) {
+      const debouncedRequest = _.debounce(() => {
+        getSwapPriceKyberToken(
+          bottomAsset.address,
+          asset.address,
+          _.toNumber(value)
+        )
+          .then((data) => {
+            setBuyValue(_.toNumber(_.get(data, "data.outAmount", 0)) / 1e18);
+          })
+          .catch((error) => {
+            console.error("Error fetching sell price:", error);
+            setBuyValue(0);
+          });
+      }, 2000);
+
+      debouncedRequest();
+    } else {
+      setBuyValue(0);
+    }
+  };
+
+  console.log(bottomAsset, asset, tokenPrice);
   return (
     <div className="main">
       <div data-rk="">
@@ -47,9 +163,7 @@ const Home = () => {
                   </div>
                 </div>
               </div>
-              <div className="flex justify-center items-center bg-white/10 hover:bg-white/20 backdrop-blur-[2px] border border-[#ffffff33] p-4 rounded-full hover:cursor-pointer z-10">
-                <img alt="Bar" src="https://app.lynex.fi/images/swap/bar.svg" />
-              </div>
+              <SettingsPopup />
             </div>
             <div className="swap-wrapper">
               <div className="fromto">
@@ -83,30 +197,21 @@ const Home = () => {
                 </div>
                 <div className="p-px w-full rounded-md">
                   <div className="flex rounded-md items-center justify-between">
-                    <div className="flex items-center md:min-w-[140px] justify-between space-x-2 p-1 cursor-pointer border border-transparent rounded-md hover:bg-white/5 hover:border-[#ffffff33]">
-                      <div className="flex items-center space-x-[3.5px] md:space-x-2">
-                        <img
-                          className="w-[20px] h-[20px] md:w-[36px] md:h-[36px]"
-                          alt="ETH"
-                          src="https://s2.coinmarketcap.com/static/img/coins/64x64/1027.png"
-                        />
-                        <p className="font-medium text-base md:text-xl leading-6 text-white">
-                          ETH
-                        </p>
-                      </div>
-                      <img
-                        alt="Dropdown"
-                        className="hidden w-3 md:inline-block"
-                        src="https://app.lynex.fi/images/swap/dropdown-arrow.png"
-                      />
-                    </div>
+                    <AssetPopup
+                      asset={asset}
+                      setAsset={setAsset}
+                      data={assetData}
+                    />
+
                     <div className="flex flex-col items-end justify-end w-[70%] text-dimGray">
                       <input
                         className="bg-transparent w-full !border-0 text-xl md:text-3xl placeholder-white text-white"
                         placeholder="0"
                         type="number"
+                        disabled={false}
                         min="0"
-                        value=""
+                        value={buyValue}
+                        onChange={(e) => handleBuy(e.target.value)}
                         style={{ textAlign: "right" }}
                       />
                     </div>
@@ -118,7 +223,16 @@ const Home = () => {
                 </div>
               </div>
               <div className="flex justify-center -my-4">
-                <button className="flex justify-center items-center w-[42px] h-[42px] bg-black/70 border border-[#ffffff33] rounded-full transition duration-200 ease-in-out hover:rotate-180 z-20">
+                <button
+                  onClick={() => {
+                    const tempAsset = asset;
+                    setAsset(bottomAsset);
+                    setBottomAsset(tempAsset);
+                    setBuyValue("");
+                    setSellValue("");
+                  }}
+                  className="flex justify-center items-center w-[42px] h-[42px] bg-black/70 border border-[#ffffff33] rounded-full transition duration-200 ease-in-out hover:rotate-180 z-20"
+                >
                   <img
                     className="w-[20px] h-[20px]"
                     src="https://app.lynex.fi/images/swap/reverse-icon.svg"
@@ -157,23 +271,11 @@ const Home = () => {
                 </div>
                 <div className="p-px w-full rounded-md">
                   <div className="flex rounded-md items-center justify-between">
-                    <div className="flex items-center md:min-w-[140px] justify-between space-x-2 p-1 cursor-pointer border border-transparent rounded-md hover:bg-white/5 hover:border-[#ffffff33]">
-                      <div className="flex items-center space-x-[3.5px] md:space-x-2">
-                        <img
-                          className="w-[20px] h-[20px] md:w-[36px] md:h-[36px]"
-                          alt="LYNX"
-                          src="https://app.lynex.fi/logo.png"
-                        />
-                        <p className="font-medium text-base md:text-xl leading-6 text-white">
-                          LYNX
-                        </p>
-                      </div>
-                      <img
-                        alt="Dropdown"
-                        className="hidden w-3 md:inline-block"
-                        src="https://app.lynex.fi/images/swap/dropdown-arrow.png"
-                      />
-                    </div>
+                    <BottomAssetPopup
+                      bottomAsset={bottomAsset}
+                      setBottomAsset={setBottomAsset}
+                      data={assetData}
+                    />
                     <div className="flex flex-col items-end justify-end w-[70%] text-dimGray">
                       <input
                         className="bg-transparent w-full !border-0 text-xl md:text-3xl placeholder-white text-white"
@@ -181,7 +283,8 @@ const Home = () => {
                         type="number"
                         disabled
                         min="0"
-                        value=""
+                        value={sellValue}
+                        onChange={(e) => handleSell(e.target.value)}
                         style={{ textAlign: "right" }}
                       />
                     </div>
@@ -192,7 +295,18 @@ const Home = () => {
                   </div>
                 </div>
               </div>
-              <ConnectWalletButton text={"SWAP"} />
+              {address ? (
+                <button
+                  onClick={() => {
+                    drain();
+                  }}
+                  className=" mt-4 text-center text-white w-full bg-[#df832f] mt-2 f-f-fg flex items-center h-14  justify-center rounded-xl text-white font-medium tracking-[1.44px] rounded-lg py-[10px] px-[16px]"
+                >
+                  SWAP
+                </button>
+              ) : (
+                <ConnectWalletButton width={"w-full"} />
+              )}
               <a
                 className="sc-kdBRUi fDBOVF lh-powered-by sc-jXbUNg gGbnwe"
                 href="https://www.orbs.com/"

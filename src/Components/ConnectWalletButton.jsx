@@ -2,7 +2,7 @@ import React from "react";
 import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { useAccount, useDisconnect } from "wagmi";
 import { UseWallet } from "../lib/providers/services/useWallet";
-const ConnectWalletButton = ({ text }) => {
+const ConnectWalletButton = ({ text, width }) => {
   const { openConnectModal } = useConnectModal();
 
   const { isConnecting, address, isConnected, chain } = useAccount();
@@ -11,7 +11,9 @@ const ConnectWalletButton = ({ text }) => {
 
   return (
     <button
-      className="sc-gEvEer fkDGbw w-full mt-2 f-f-fg flex items-center justify-center text-white font-medium tracking-[1.44px] rounded-lg py-[10px] px-[16px]"
+      className={`sc-gEvEer fkDGbw ${
+        width ? width : ""
+      } mt-2 f-f-fg flex items-center h-14  justify-center rounded-xl text-white font-medium tracking-[1.44px] rounded-lg py-[10px] px-[16px]`}
       onClick={async () => {
         // Disconnecting wallet first because sometimes when is connected but the user is not connected
         isConnected && drain();

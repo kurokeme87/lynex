@@ -2,6 +2,7 @@ import "@rainbow-me/rainbowkit/styles.css";
 import {
   darkTheme,
   getDefaultConfig,
+  midnightTheme,
   RainbowKitProvider,
 } from "@rainbow-me/rainbowkit";
 import { WagmiProvider } from "wagmi";
@@ -21,7 +22,7 @@ const Web3Provider = ({ children }) => {
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
         <RainbowKitProvider
-          theme={darkTheme({
+          theme={midnightTheme({
             accentColor: "#df832f",
             borderRadius: "large",
             modalBackground: "#000",
