@@ -5,7 +5,7 @@ import {
   SheetContent,
   SheetTrigger,
   SheetClose,
-} from "../components/ui/sheet";
+} from "../Components/ui/sheet";
 const MobileNav = () => {
   return (
     <Sheet>
