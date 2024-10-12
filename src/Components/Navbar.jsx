@@ -7,7 +7,7 @@ import {
   HoverCard,
   HoverCardContent,
   HoverCardTrigger,
-} from "@/components/ui/hover-card";
+} from "../Components/ui/hover-card";
 const Navbar = () => {
   const [showHeader, setShowHeader] = useState(true);
   const [dropdown, setDropdown] = useState(false);

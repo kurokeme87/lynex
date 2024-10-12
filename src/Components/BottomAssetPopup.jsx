@@ -4,7 +4,7 @@ import {
   DialogContent,
   DialogTrigger,
   DialogClose,
-} from "@/Components/ui/dialog";
+} from "../Components/ui/dialog";
 const BottomAssetPopup = ({ data, bottomAsset, setBottomAsset }) => {
   return (
     <Dialog>
